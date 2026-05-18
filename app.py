@@ -13,6 +13,14 @@ st.set_page_config(page_title="Smart Crop Health Analyzer", layout="wide")
 
 # ---------------- DATA & MODELS ----------------
 CROP_MAP = {"Rice": 0, "Maize": 1, "Coffee": 2}
+
+# Updated Growth Stage Labels to 1-based indexing
+GROWTH_LABELS = {
+    1: "Seedling Stage",
+    2: "Vegetative Stage",
+    3: "Flowering Stage"
+}
+
 DEF_LABELS = {
     0: "Nitrogen (N)",
     1: "Phosphorus (P)",
@@ -208,11 +216,19 @@ if page == "Growth Prediction":
         meta[0, CROP_MAP[crop]] = 1.0
 
         preds = gro_model.predict([img_arr, meta], verbose=0)
+        
+        # Shift index by +1 to transition from 0-indexed outputs to your 1-indexed labels
+        pred_idx = int(np.argmax(preds)) + 1
+        
+        # If your model natively outputs 4 classes (where index 0 is placeholder/unused), 
+        # remove the "+ 1" line above and use: pred_idx = int(np.argmax(preds))
+        
+        growth_stage_label = GROWTH_LABELS.get(pred_idx, "Unknown Stage")
         confidence = float(np.max(preds) * 100)
 
         st.markdown(f"""
         <div class="result-card">
-            <div class="diagnosis-title">Growth Stage Predicted</div>
+            <div class="diagnosis-title">Growth Stage: {growth_stage_label}</div>
             <div class="conf-text">Confidence: {confidence:.2f}%</div>
         </div>
         """, unsafe_allow_html=True)
